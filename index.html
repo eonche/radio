@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Radio Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a sleeker look and animations */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Custom scrollbar for a modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+
+        /* The main audio visualizer animation */
+        .audio-visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            height: 80px;
+        }
+
+        .visualizer-bar {
+            width: 8px;
+            background-color: #818cf8; /* indigo-400 */
+            border-radius: 4px;
+            animation: quiet 1.5s ease-in-out infinite;
+            height: 10px; /* Default quiet state */
+        }
+
+        /* Animation states when the 'playing' class is active */
+        .playing .visualizer-bar {
+            animation-name: pulse;
+        }
+
+        .playing .visualizer-bar:nth-child(1) { animation-delay: 0s; }
+        .playing .visualizer-bar:nth-child(2) { animation-delay: 0.2s; }
+        .playing .visualizer-bar:nth-child(3) { animation-delay: 0.4s; }
+        .playing .visualizer-bar:nth-child(4) { animation-delay: 0.6s; }
+        .playing .visualizer-bar:nth-child(5) { animation-delay: 0.8s; }
+        
+        @keyframes pulse {
+            0%, 100% { height: 10px; opacity: 0.7; }
+            50% { height: 70px; opacity: 1; }
+        }
+
+        @keyframes quiet {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.4); }
+        }
+
+        /* Custom style for volume range input */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #374151; /* gray-700 */
+            border-radius: 3px;
+        }
+        input[type=range]::-moz-range-track {
+            height: 6px;
+            background: #374151; /* gray-700 */
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px; /* Vertically center */
+            background-color: #e5e7eb; /* gray-200 */
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            transition: background-color 0.15s ease-in-out;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+             background-color: #fff;
+        }
+        input[type=range]::-moz-range-thumb {
+            border: none;
+            background-color: #e5e7eb; /* gray-200 */
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+             transition: background-color 0.15s ease-in-out;
+        }
+         input[type=range]::-moz-range-thumb:hover {
+             background-color: #fff;
+        }
+        
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Application Container -->
+    <div class="w-full max-w-4xl mx-auto bg-gray-800 bg-opacity-50 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+
+        <!-- Left Panel: Player and Controls -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-gray-800/50">
+            <header class="mb-6">
+                <h1 class="text-3xl font-bold text-gray-100">Night Radio</h1>
+                <p class="text-indigo-400 font-medium">sa tajmerom :)</p>
+            </header>
+
+            <div class="flex-grow flex flex-col items-center justify-center text-center">
+                <!-- Station Art / Placeholder -->
+                <div class="w-48 h-48 md:w-56 md:h-56 rounded-xl bg-gray-700 shadow-lg mb-6 flex items-center justify-center overflow-hidden">
+                    <img id="station-art" src="https://placehold.co/224x224/1f2937/a78bfa?text=Welcome" alt="Station Art" class="w-full h-full object-cover transition-transform duration-500 ease-in-out">
+                </div>
+                <!-- Now Playing Info -->
+                <div id="now-playing" class="mb-4">
+                    <h2 id="station-name" class="text-xl font-semibold text-gray-100 truncate">Select a Station</h2>
+                    <p id="station-genre" class="text-sm text-gray-400">Nothing playing yet</p>
+                </div>
+                 <!-- Audio Visualizer -->
+                <div id="visualizer-container" class="audio-visualizer mb-4">
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                </div>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="mt-auto space-y-4">
+                 <!-- Play/Pause Button -->
+                <button id="play-pause-btn" class="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 transition-all duration-200 text-white font-bold py-3 px-4 rounded-lg shadow-lg">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <span id="play-pause-text">Play</span>
+                </button>
+
+                <!-- Sleep Timer -->
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <p id="timer-status" class="text-sm text-gray-400 transition-colors">Sleep Timer</p>
+                        <button id="cancel-timer-btn" class="hidden text-xs bg-red-600 hover:bg-red-500 text-white font-semibold py-1 px-2 rounded-md transition-all">Cancel</button>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="15">15 min</button>
+                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="30">30 min</button>
+                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="45">45 min</button>
+                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="60">60 min</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Station List -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-900/30">
+            <h3 class="text-lg font-semibold mb-4 text-gray-200">Stations</h3>
+            <div id="station-list" class="h-[30rem] md:h-full overflow-y-auto space-y-2 pr-2">
+                <!-- Stations will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- The actual audio element, hidden from the user -->
+    <audio id="audio-player" crossorigin="anonymous"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            var audioPlayer = document.getElementById('audio-player');
+            var playPauseBtn = document.getElementById('play-pause-btn');
+            var playIcon = document.getElementById('play-icon');
+            var pauseIcon = document.getElementById('pause-icon');
+            var playPauseText = document.getElementById('play-pause-text');
+            var stationList = document.getElementById('station-list');
+            var stationArt = document.getElementById('station-art');
+            var stationNameEl = document.getElementById('station-name');
+            var stationGenreEl = document.getElementById('station-genre');
+            var visualizerContainer = document.getElementById('visualizer-container');
+            // Timer DOM Elements
+            var timerButtons = document.querySelectorAll('.timer-btn');
+            var cancelTimerBtn = document.getElementById('cancel-timer-btn');
+            var timerStatusEl = document.getElementById('timer-status');
+
+            // Radio Stations Data
+            var stations = [
+                {
+                    name: "ROCK Radio Beograd",
+                    genre: "Tvoj zivot - tvoja muzika",
+                    url: "https://edge9.pink.rs/rockstream",
+                    art: "https://placehold.co/224x224/4338ca/ffffff?text=ROCK"
+                },
+                {
+                    name: "Lush (SomaFM)",
+                    genre: "Downtempo & Lofi",
+                    url: "https://ice1.somafm.com/lush-128-mp3",
+                    art: "https://placehold.co/224x224/7c3aed/ffffff?text=Lush"
+                },
+                {
+                    name: "DEF CON Radio (SomaFM)",
+                    genre: "Electronic & Hacking Culture",
+                    url: "https://ice1.somafm.com/defcon-128-mp3",
+                    art: "https://placehold.co/224x224/b91c1c/ffffff?text=DEFCON"
+                },
+                {
+                    name: "Radio Paradise",
+                    genre: "Eclectic Rock Mix",
+                    url: "https://stream.radioparadise.com/mp3-192",
+                    art: "https://placehold.co/224x224/047857/ffffff?text=Paradise"
+                },
+                 {
+                    name: "Radio Swiss Jazz",
+                    genre: "Classic & Modern Jazz",
+                    url: "https://stream.srg-ssr.ch/m/rsj/mp3_128",
+                    art: "https://placehold.co/224x224/be123c/ffffff?text=Jazz"
+                },
+                {
+                    name: "Radio Swiss Classic",
+                    genre: "Classical Music",
+                    url: "https://stream.srg-ssr.ch/m/rsc_de/mp3_128",
+                    art: "https://placehold.co/224x224/9a3412/ffffff?text=Classic"
+                },
+                {
+                    name: "NTS Radio",
+                    genre: "Underground & Alternative",
+                    url: "https://stream-relay-geo.ntslive.net/stream",
+                    art: "https://placehold.co/224x224/4338ca/ffffff?text=NTS"
+                }
+            ];
+
+            var currentStationIndex = -1;
+            var isPlaying = false;
+            var sleepTimerID = null;
+            var countdownIntervalID = null;
+
+            // --- UI Update Functions ---
+            
+            function updatePlayPauseUI(playing) {
+                isPlaying = playing;
+                if (playing) {
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                    playPauseText.textContent = 'Pause';
+                    visualizerContainer.classList.add('playing');
+                } else {
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                    playPauseText.textContent = 'Play';
+                    visualizerContainer.classList.remove('playing');
+                }
+            }
+            
+            function updateStationUI(index) {
+                var station = stations[index];
+                stationNameEl.textContent = station.name;
+                stationGenreEl.textContent = station.genre;
+                stationArt.src = station.art;
+                stationArt.style.transform = 'scale(1.05)';
+                setTimeout(function() { stationArt.style.transform = 'scale(1)'; }, 500);
+
+                document.querySelectorAll('.station-item').forEach(function(item, idx) {
+                    if (idx === index) {
+                        item.classList.add('bg-indigo-600');
+                        item.classList.remove('hover:bg-gray-700');
+                    } else {
+                        item.classList.remove('bg-indigo-600');
+                        item.classList.add('hover:bg-gray-700');
+                    }
+                });
+            }
+
+            // --- Player Logic ---
+
+            function playStation(index) {
+                if(index === currentStationIndex && isPlaying) return;
+
+                audioPlayer.pause();
+                audioPlayer.src = '';
+                audioPlayer.load();
+
+                stationNameEl.textContent = "Connecting...";
+                stationGenreEl.textContent = stations[index].name;
+                currentStationIndex = index;
+                audioPlayer.src = stations[index].url;
+                
+                var playPromise = audioPlayer.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(function() {
+                        updatePlayPauseUI(true);
+                        updateStationUI(index);
+                    }).catch(function(error) {
+                        console.error("Error playing audio:", error);
+                        stationNameEl.textContent = "Error Loading Station";
+                        stationGenreEl.textContent = "Please try another one.";
+                        stationArt.src = "https://placehold.co/224x224/1f2937/ef4444?text=Error";
+                        updatePlayPauseUI(false);
+                        currentStationIndex = -1;
+                    });
+                }
+            }
+
+            function togglePlayPause() {
+                if (currentStationIndex === -1) {
+                    playStation(0);
+                } else {
+                    if (audioPlayer.paused) {
+                        var playPromise = audioPlayer.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(function() {
+                                updatePlayPauseUI(true);
+                            }).catch(function(e) {
+                                console.error("Error on resume play:", e);
+                            });
+                        }
+                    } else {
+                        audioPlayer.pause();
+                        updatePlayPauseUI(false);
+                    }
+                }
+            }
+            
+            // --- Timer Logic ---
+            function cancelTimer() {
+                clearTimeout(sleepTimerID);
+                clearInterval(countdownIntervalID);
+                sleepTimerID = null;
+                countdownIntervalID = null;
+                
+                timerStatusEl.textContent = "Sleep Timer";
+                timerStatusEl.classList.remove("text-indigo-400");
+                cancelTimerBtn.classList.add('hidden');
+                timerButtons.forEach(function(btn) {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('bg-gray-700');
+                });
+            }
+            
+            function pad(num) {
+                return num < 10 ? '0' + num : String(num);
+            }
+
+            function startTimer(minutes) {
+                cancelTimer();
+
+                var endTime = Date.now() + minutes * 60 * 1000;
+
+                sleepTimerID = setTimeout(function() {
+                    audioPlayer.pause();
+                    cancelTimer();
+                }, minutes * 60 * 1000);
+
+                countdownIntervalID = setInterval(function() {
+                    var remaining = endTime - Date.now();
+                    if (remaining <= 0) {
+                        clearInterval(countdownIntervalID);
+                        return;
+                    }
+                    var remainingMinutes = Math.floor((remaining / 1000) / 60);
+                    var remainingSeconds = Math.floor((remaining / 1000) % 60);
+                    timerStatusEl.textContent = 'Stops in: ' + pad(remainingMinutes) + ':' + pad(remainingSeconds);
+                }, 1000);
+
+                timerStatusEl.classList.add("text-indigo-400");
+                cancelTimerBtn.classList.remove('hidden');
+                timerButtons.forEach(function(btn) {
+                    var btnMinutes = parseInt(btn.dataset.minutes, 10);
+                    if (btnMinutes === minutes) {
+                        btn.classList.add('bg-indigo-600', 'text-white');
+                        btn.classList.remove('bg-gray-700');
+                    } else {
+                        btn.classList.remove('bg-indigo-600', 'text-white');
+                        btn.classList.add('bg-gray-700');
+                    }
+                });
+            }
+
+            // --- Event Listeners ---
+
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            audioPlayer.addEventListener('play', function() { updatePlayPauseUI(true); });
+            audioPlayer.addEventListener('pause', function() { updatePlayPauseUI(false); });
+            audioPlayer.addEventListener('ended', function() { updatePlayPauseUI(false); });
+            audioPlayer.addEventListener('error', function(e) {
+                console.error("Audio Player Error:", e);
+                if (audioPlayer.src !== '' && audioPlayer.src !== window.location.href) {
+                     stationNameEl.textContent = "Stream Interrupted";
+                    stationGenreEl.textContent = "Please select another station.";
+                    stationArt.src = "https://placehold.co/224x224/1f2937/ef4444?text=Error";
+                    updatePlayPauseUI(false);
+                    currentStationIndex = -1;
+                }
+            });
+            timerButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    startTimer(parseInt(this.dataset.minutes, 10));
+                });
+            });
+            cancelTimerBtn.addEventListener('click', cancelTimer);
+
+            // --- Initialization ---
+
+            function initializeStationList() {
+                stations.forEach(function(station, index) {
+                    var stationDiv = document.createElement('div');
+                    stationDiv.className = 'station-item flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors duration-200';
+                    stationDiv.innerHTML =
+                        '<img src="' + station.art + '" alt="' + station.name + '" class="w-12 h-12 rounded-md mr-4 object-cover">' +
+                        '<div class="flex-grow">' +
+                            '<p class="font-semibold text-gray-100">' + station.name + '</p>' +
+                            '<p class="text-sm text-gray-400">' + station.genre + '</p>' +
+                        '</div>' +
+                        '<div class="play-indicator ml-auto">' +
+                            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-indigo-400"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"></path></svg>' +
+                        '</div>';
+                    
+                    stationDiv.addEventListener('click', function() { playStation(index); });
+                    stationList.appendChild(stationDiv);
+                });
+            }
+
+            // Initial setup
+            initializeStationList();
+            audioPlayer.volume = 0.8;
+        });
+    </script>
+</body>
+</html>
+
