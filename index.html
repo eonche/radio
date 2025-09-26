@@ -1,250 +1,363 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Night Radio Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- iPad 3rd gen rezolucija je 2048x1536 (Retina). Standardni viewport je kljucan. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Noćni Radio Plejer (Lite)</title>
     <style>
-        /* Custom styles for a sleeker look and animations */
+        /* Osnovni stilovi za kompatibilnost sa starim Safari/WebKit brauzerima */
         body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            font-family: Arial, Helvetica, sans-serif; /* Koristimo sistemske fontove */
+            background-color: #111111;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
         }
 
-        /* Custom scrollbar for a modern feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1f2937; /* gray-800 */
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563; /* gray-600 */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; /* gray-500 */
+        /* Glavni kontejner fiksne sirine za jednostavan raspored */
+        #main-container {
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #222222;
+            border: 1px solid #333333;
+            padding: 10px;
+            overflow: hidden; /* Za float elemente */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
 
-        /* The main audio visualizer animation */
-        .audio-visualizer {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            height: 80px;
+        /* Paneli (Leva i Desna strana) */
+        #left-panel, #right-panel {
+            float: left;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
+        /* Postavljamo na 50% za sire ekrane */
+        @media only screen and (min-width: 600px) {
+            #left-panel, #right-panel {
+                width: 50%;
+            }
+        }
+        
+        /* Stilizacija stanice (placeholder slike) */
+        #station-art {
+            width: 150px;
+            height: 150px;
+            background-color: #444444;
+            display: block;
+            margin: 10px auto 20px auto;
+            border: 5px solid #0099cc; /* Osnovna akcentna boja */
+        }
+        
+        #station-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        #station-genre {
+            font-size: 0.9em;
+            color: #aaaaaa;
+            margin-bottom: 15px;
+        }
+
+        /* Stilovi za dugmad i kontrole */
+        button {
+            cursor: pointer;
+            background-color: #007799;
+            color: #ffffff;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px 0;
+            width: 100%;
+            font-size: 1em;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            background-color: #0099cc;
+        }
+        
+        /* Timer Layout */
+        #timer-controls {
+            padding-top: 10px;
+            border-top: 1px solid #333333;
+            margin-top: 20px;
+        }
+        .timer-grid {
+            display: block; /* Uklanjamo flex/grid za starije preglednike */
+        }
+        .timer-grid button {
+            width: 48%;
+            margin: 1%;
+            float: left;
+            padding: 8px 0;
+            font-size: 0.9em;
+            background-color: #333333;
+        }
+        .timer-grid button:nth-child(even) {
+            margin-right: 0;
+        }
+        .timer-grid button:nth-child(odd) {
+             margin-left: 0;
+        }
+        
+        /* Timer Status */
+        #timer-status {
+            color: #aaaaaa;
+            font-size: 0.9em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        #cancel-timer-btn {
+            background-color: #cc0000;
+            width: auto;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            display: inline-block;
+            float: none;
+        }
+        
+        /* Lista stanica */
+        #station-list-container {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: scroll;
+            padding-right: 10px;
+        }
+        
+        .station-item {
+            background-color: #333333;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            text-align: left;
+            overflow: hidden; /* Za float unutar itema */
+        }
+        
+        .station-item:hover {
+            background-color: #444444;
+        }
+        
+        .station-art-small {
+            float: left;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            background-color: #555555;
+            display: block;
+        }
+        
+        .station-info {
+            float: left;
+            width: 70%;
+        }
+        
+        .station-info p:first-child {
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        
+        .station-info p:last-child {
+            font-size: 0.8em;
+            color: #aaaaaa;
+        }
+        
+        /* Stanica koja se trenutno reprodukuje */
+        .selected-station {
+            background-color: #0099cc !important;
+            color: #ffffff;
+        }
+        .selected-station .station-info p {
+            color: #ffffff;
+        }
+        
+        /* Vizualizator - veoma pojednostavljen */
+        #visualizer-container {
+            height: 50px;
+            margin: 15px 0;
+            text-align: center;
+        }
         .visualizer-bar {
-            width: 8px;
-            background-color: #818cf8; /* indigo-400 */
-            border-radius: 4px;
+            width: 5px;
+            height: 10px;
+            background-color: #0099cc;
+            display: inline-block;
+            margin: 0 2px;
+            -webkit-animation: quiet 1.5s ease-in-out infinite;
             animation: quiet 1.5s ease-in-out infinite;
-            height: 10px; /* Default quiet state */
         }
-
-        /* Animation states when the 'playing' class is active */
+        
         .playing .visualizer-bar {
+            -webkit-animation-name: pulse;
             animation-name: pulse;
         }
 
-        .playing .visualizer-bar:nth-child(1) { animation-delay: 0s; }
-        .playing .visualizer-bar:nth-child(2) { animation-delay: 0.2s; }
-        .playing .visualizer-bar:nth-child(3) { animation-delay: 0.4s; }
-        .playing .visualizer-bar:nth-child(4) { animation-delay: 0.6s; }
-        .playing .visualizer-bar:nth-child(5) { animation-delay: 0.8s; }
+        /* Prefix-i za stariji WebKit (iPad 3) */
+        @-webkit-keyframes pulse {
+            0%, 100% { height: 10px; opacity: 0.7; }
+            50% { height: 40px; opacity: 1; }
+        }
+        @-webkit-keyframes quiet {
+            0%, 100% { -webkit-transform: scaleY(1); }
+            50% { -webkit-transform: scaleY(0.4); }
+        }
         
         @keyframes pulse {
             0%, 100% { height: 10px; opacity: 0.7; }
-            50% { height: 70px; opacity: 1; }
+            50% { height: 40px; opacity: 1; }
         }
-
         @keyframes quiet {
             0%, 100% { transform: scaleY(1); }
             50% { transform: scaleY(0.4); }
         }
-
-        /* Custom style for volume range input */
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            cursor: pointer;
-            background: transparent;
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            height: 6px;
-            background: #374151; /* gray-700 */
-            border-radius: 3px;
-        }
-        input[type=range]::-moz-range-track {
-            height: 6px;
-            background: #374151; /* gray-700 */
-            border-radius: 3px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            margin-top: -5px; /* Vertically center */
-            background-color: #e5e7eb; /* gray-200 */
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            transition: background-color 0.15s ease-in-out;
-        }
-        input[type=range]::-webkit-slider-thumb:hover {
-             background-color: #fff;
-        }
-        input[type=range]::-moz-range-thumb {
-            border: none;
-            background-color: #e5e7eb; /* gray-200 */
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-             transition: background-color 0.15s ease-in-out;
-        }
-         input[type=range]::-moz-range-thumb:hover {
-             background-color: #fff;
-        }
         
+        .hidden {
+            display: none !important;
+        }
+
+        /* Cistimo float-ove */
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+<body>
 
-    <!-- Main Application Container -->
-    <div class="w-full max-w-4xl mx-auto bg-gray-800 bg-opacity-50 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-
-        <!-- Left Panel: Player and Controls -->
-        <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-gray-800/50">
-            <header class="mb-6">
-                <h1 class="text-3xl font-bold text-gray-100">Night Radio</h1>
-                <p class="text-indigo-400 font-medium">sa tajmerom :)</p>
+    <!-- Glavni Kontejner Aplikacije -->
+    <div id="main-container">
+        
+        <!-- Leva Strana: Plejer i Kontrole -->
+        <div id="left-panel">
+            <header style="margin-bottom: 20px;">
+                <h1 style="font-size: 2em; color: #0099cc; margin-bottom: 5px;">Noćni Radio</h1>
+                <p style="font-size: 0.9em; color: #aaaaaa;">Lagana verzija sa tajmerom</p>
             </header>
 
-            <div class="flex-grow flex flex-col items-center justify-center text-center">
-                <!-- Station Art / Placeholder -->
-                <div class="w-48 h-48 md:w-56 md:h-56 rounded-xl bg-gray-700 shadow-lg mb-6 flex items-center justify-center overflow-hidden">
-                    <img id="station-art" src="https://placehold.co/224x224/1f2937/a78bfa?text=Welcome" alt="Station Art" class="w-full h-full object-cover transition-transform duration-500 ease-in-out">
-                </div>
-                <!-- Now Playing Info -->
-                <div id="now-playing" class="mb-4">
-                    <h2 id="station-name" class="text-xl font-semibold text-gray-100 truncate">Select a Station</h2>
-                    <p id="station-genre" class="text-sm text-gray-400">Nothing playing yet</p>
-                </div>
-                 <!-- Audio Visualizer -->
-                <div id="visualizer-container" class="audio-visualizer mb-4">
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                </div>
+            <!-- Art/Placeholder -->
+            <img id="station-art" src="https://placehold.co/150x150/111111/cccccc?text=Dobro+Dosli" alt="Slika Stanice">
+
+            <!-- Trenutna Reprodukcija -->
+            <div id="now-playing">
+                <h2 id="station-name">Izaberite Stanicu</h2>
+                <p id="station-genre">Trenutno se ništa ne reprodukuje</p>
+            </div>
+            
+            <!-- Vizualizator -->
+            <div id="visualizer-container">
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar" style="-webkit-animation-delay: 0.2s; animation-delay: 0.2s;"></div>
+                <div class="visualizer-bar" style="-webkit-animation-delay: 0.4s; animation-delay: 0.4s;"></div>
+                <div class="visualizer-bar" style="-webkit-animation-delay: 0.6s; animation-delay: 0.6s;"></div>
+                <div class="visualizer-bar" style="-webkit-animation-delay: 0.8s; animation-delay: 0.8s;"></div>
             </div>
 
-            <!-- Player Controls -->
-            <div class="mt-auto space-y-4">
-                 <!-- Play/Pause Button -->
-                <button id="play-pause-btn" class="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 transition-all duration-200 text-white font-bold py-3 px-4 rounded-lg shadow-lg">
-                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                    <span id="play-pause-text">Play</span>
+            <!-- Kontrole Plejera -->
+            <div>
+                 <!-- Dugme za Pokretanje/Pauzu -->
+                <button id="play-pause-btn">
+                    <span id="play-pause-text">POKRENI</span>
                 </button>
 
-                <!-- Sleep Timer -->
-                <div class="pt-2">
-                    <div class="flex justify-between items-center mb-2">
-                        <p id="timer-status" class="text-sm text-gray-400 transition-colors">Sleep Timer</p>
-                        <button id="cancel-timer-btn" class="hidden text-xs bg-red-600 hover:bg-red-500 text-white font-semibold py-1 px-2 rounded-md transition-all">Cancel</button>
+                <!-- Tajmer za Spavanje -->
+                <div id="timer-controls">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <p id="timer-status">Tajmer za Spavanje</p>
+                        <button id="cancel-timer-btn" class="hidden" style="margin: 5px auto 0; width: 100px;">Poništi</button>
                     </div>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="15">15 min</button>
-                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="30">30 min</button>
-                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="45">45 min</button>
-                        <button class="timer-btn text-sm py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-minutes="60">60 min</button>
+                    <div class="timer-grid clearfix">
+                        <button class="timer-btn" data-minutes="15">15 min</button>
+                        <button class="timer-btn" data-minutes="30">30 min</button>
+                        <button class="timer-btn" data-minutes="45">45 min</button>
+                        <button class="timer-btn" data-minutes="60">60 min</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Panel: Station List -->
-        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-900/30">
-            <h3 class="text-lg font-semibold mb-4 text-gray-200">Stations</h3>
-            <div id="station-list" class="h-[30rem] md:h-full overflow-y-auto space-y-2 pr-2">
-                <!-- Stations will be dynamically inserted here -->
+        <!-- Desna Strana: Lista Stanica -->
+        <div id="right-panel">
+            <h3 style="font-size: 1.2em; margin-bottom: 10px; color: #e0e0e0;">Dostupne Stanice</h3>
+            <div id="station-list-container">
+                <div id="station-list">
+                    <!-- Stanice ce biti dinamicki umetnute ovde -->
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- The actual audio element, hidden from the user -->
+    <!-- Sam Audio Element (Skriven) -->
     <audio id="audio-player" crossorigin="anonymous"></audio>
 
     <script>
+        // Osiguravamo da se kod pokrece tek nakon ucitavanja DOM-a
         document.addEventListener('DOMContentLoaded', function() {
-            // DOM Elements
+            
+            // DOM elementi
             var audioPlayer = document.getElementById('audio-player');
             var playPauseBtn = document.getElementById('play-pause-btn');
-            var playIcon = document.getElementById('play-icon');
-            var pauseIcon = document.getElementById('pause-icon');
             var playPauseText = document.getElementById('play-pause-text');
             var stationList = document.getElementById('station-list');
             var stationArt = document.getElementById('station-art');
             var stationNameEl = document.getElementById('station-name');
             var stationGenreEl = document.getElementById('station-genre');
             var visualizerContainer = document.getElementById('visualizer-container');
-            // Timer DOM Elements
             var timerButtons = document.querySelectorAll('.timer-btn');
             var cancelTimerBtn = document.getElementById('cancel-timer-btn');
             var timerStatusEl = document.getElementById('timer-status');
 
-            // Radio Stations Data
+            // Radio Stanice (isti podaci kao u originalu)
             var stations = [
                 {
                     name: "ROCK Radio Beograd",
                     genre: "Tvoj zivot - tvoja muzika",
                     url: "https://edge9.pink.rs/rockstream",
-                    art: "https://placehold.co/224x224/4338ca/ffffff?text=ROCK"
+                    art: "https://placehold.co/40x40/4338ca/ffffff?text=R"
                 },
                 {
                     name: "Lush (SomaFM)",
                     genre: "Downtempo & Lofi",
                     url: "https://ice1.somafm.com/lush-128-mp3",
-                    art: "https://placehold.co/224x224/7c3aed/ffffff?text=Lush"
+                    art: "https://placehold.co/40x40/7c3aed/ffffff?text=L"
                 },
                 {
                     name: "DEF CON Radio (SomaFM)",
                     genre: "Electronic & Hacking Culture",
                     url: "https://ice1.somafm.com/defcon-128-mp3",
-                    art: "https://placehold.co/224x224/b91c1c/ffffff?text=DEFCON"
+                    art: "https://placehold.co/40x40/b91c1c/ffffff?text=D"
                 },
                 {
                     name: "Radio Paradise",
                     genre: "Eclectic Rock Mix",
                     url: "https://stream.radioparadise.com/mp3-192",
-                    art: "https://placehold.co/224x224/047857/ffffff?text=Paradise"
+                    art: "https://placehold.co/40x40/047857/ffffff?text=P"
                 },
                  {
                     name: "Radio Swiss Jazz",
                     genre: "Classic & Modern Jazz",
                     url: "https://stream.srg-ssr.ch/m/rsj/mp3_128",
-                    art: "https://placehold.co/224x224/be123c/ffffff?text=Jazz"
+                    art: "https://placehold.co/40x40/be123c/ffffff?text=J"
                 },
                 {
                     name: "Radio Swiss Classic",
                     genre: "Classical Music",
                     url: "https://stream.srg-ssr.ch/m/rsc_de/mp3_128",
-                    art: "https://placehold.co/224x224/9a3412/ffffff?text=Classic"
+                    art: "https://placehold.co/40x40/9a3412/ffffff?text=C"
                 },
                 {
                     name: "NTS Radio",
                     genre: "Underground & Alternative",
                     url: "https://stream-relay-geo.ntslive.net/stream",
-                    art: "https://placehold.co/224x224/4338ca/ffffff?text=NTS"
+                    art: "https://placehold.co/40x40/4338ca/ffffff?text=N"
                 }
             ];
 
@@ -253,20 +366,17 @@
             var sleepTimerID = null;
             var countdownIntervalID = null;
 
-            // --- UI Update Functions ---
+            // --- UI Funkcije (Pojednostavljene) ---
             
             function updatePlayPauseUI(playing) {
                 isPlaying = playing;
+                playPauseText.textContent = playing ? 'PAUZIRAJ' : 'POKRENI';
+                
+                // Kontrola vizualizatora
                 if (playing) {
-                    playIcon.classList.add('hidden');
-                    pauseIcon.classList.remove('hidden');
-                    playPauseText.textContent = 'Pause';
-                    visualizerContainer.classList.add('playing');
+                    visualizerContainer.className = 'playing';
                 } else {
-                    playIcon.classList.remove('hidden');
-                    pauseIcon.classList.add('hidden');
-                    playPauseText.textContent = 'Play';
-                    visualizerContainer.classList.remove('playing');
+                    visualizerContainer.className = '';
                 }
             }
             
@@ -274,91 +384,105 @@
                 var station = stations[index];
                 stationNameEl.textContent = station.name;
                 stationGenreEl.textContent = station.genre;
-                stationArt.src = station.art;
-                stationArt.style.transform = 'scale(1.05)';
-                setTimeout(function() { stationArt.style.transform = 'scale(1)'; }, 500);
+                
+                // Placeholder slika za veliku grafiku (station-art)
+                // Koristimo boju iz art URL-a kao pozadinu
+                var artColor = station.art.split('/')[4].substring(0, 6); 
+                stationArt.src = 'https://placehold.co/150x150/' + artColor + '/ffffff?text=' + station.name.substring(0, 1);
 
-                document.querySelectorAll('.station-item').forEach(function(item, idx) {
-                    if (idx === index) {
-                        item.classList.add('bg-indigo-600');
-                        item.classList.remove('hover:bg-gray-700');
+                // Azuriranje selekcije u listi stanica
+                var items = stationList.querySelectorAll('.station-item');
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+                    if (i === index) {
+                        item.className = 'station-item selected-station clearfix';
                     } else {
-                        item.classList.remove('bg-indigo-600');
-                        item.classList.add('hover:bg-gray-700');
+                        item.className = 'station-item clearfix';
                     }
-                });
+                }
             }
 
-            // --- Player Logic ---
+            // --- Logika Plejera ---
 
             function playStation(index) {
-                if(index === currentStationIndex && isPlaying) return;
+                if (index === currentStationIndex && isPlaying) return;
 
                 audioPlayer.pause();
                 audioPlayer.src = '';
                 audioPlayer.load();
 
-                stationNameEl.textContent = "Connecting...";
+                // Prikazujemo status ucitavanja
+                stationNameEl.textContent = "Povezivanje...";
                 stationGenreEl.textContent = stations[index].name;
                 currentStationIndex = index;
                 audioPlayer.src = stations[index].url;
                 
+                // Pokretanje reprodukcije
                 var playPromise = audioPlayer.play();
                 if (playPromise !== undefined) {
+                    // Stariji brauzeri mogu zahtevati direktno play() poziv bez Promise-a
                     playPromise.then(function() {
                         updatePlayPauseUI(true);
                         updateStationUI(index);
                     }).catch(function(error) {
-                        console.error("Error playing audio:", error);
-                        stationNameEl.textContent = "Error Loading Station";
-                        stationGenreEl.textContent = "Please try another one.";
-                        stationArt.src = "https://placehold.co/224x224/1f2937/ef4444?text=Error";
+                        // Ako play() ne uspe (npr. zbog autoplay pravila)
+                        console.error("Greska pri reprodukciji audio zapisa:", error);
+                        stationNameEl.textContent = "Greska pri Ucitavanju Stanice";
+                        stationGenreEl.textContent = "Pokušajte ponovo.";
                         updatePlayPauseUI(false);
                         currentStationIndex = -1;
                     });
+                } else {
+                     // Fallback za starije browsere koji ne podržavaju play Promise
+                    try {
+                        audioPlayer.play();
+                        updatePlayPauseUI(true);
+                        updateStationUI(index);
+                    } catch (e) {
+                         console.error("Greska pri reprodukciji audio zapisa (fallback):", e);
+                        stationNameEl.textContent = "Greska pri Ucitavanju Stanice";
+                        stationGenreEl.textContent = "Pokušajte ponovo.";
+                        updatePlayPauseUI(false);
+                        currentStationIndex = -1;
+                    }
                 }
             }
 
             function togglePlayPause() {
                 if (currentStationIndex === -1) {
+                    // Ako nista nije izabrano, pokreni prvu stanicu
                     playStation(0);
                 } else {
                     if (audioPlayer.paused) {
-                        var playPromise = audioPlayer.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(function() {
-                                updatePlayPauseUI(true);
-                            }).catch(function(e) {
-                                console.error("Error on resume play:", e);
-                            });
-                        }
+                        audioPlayer.play();
                     } else {
                         audioPlayer.pause();
-                        updatePlayPauseUI(false);
                     }
                 }
             }
             
-            // --- Timer Logic ---
+            // --- Logika Tajmera ---
+            
+            function pad(num) {
+                return num < 10 ? '0' + num : String(num);
+            }
+            
             function cancelTimer() {
                 clearTimeout(sleepTimerID);
                 clearInterval(countdownIntervalID);
                 sleepTimerID = null;
                 countdownIntervalID = null;
                 
-                timerStatusEl.textContent = "Sleep Timer";
-                timerStatusEl.classList.remove("text-indigo-400");
-                cancelTimerBtn.classList.add('hidden');
-                timerButtons.forEach(function(btn) {
-                    btn.classList.remove('bg-indigo-600', 'text-white');
-                    btn.classList.add('bg-gray-700');
-                });
+                timerStatusEl.textContent = "Tajmer za Spavanje";
+                cancelTimerBtn.className = 'hidden';
+                
+                // Uklanjanje selekcije sa dugmadi tajmera
+                for (var i = 0; i < timerButtons.length; i++) {
+                    var btn = timerButtons[i];
+                    btn.style.backgroundColor = '#333333';
+                }
             }
             
-            function pad(num) {
-                return num < 10 ? '0' + num : String(num);
-            }
-
             function startTimer(minutes) {
                 cancelTimer();
 
@@ -367,6 +491,7 @@
                 sleepTimerID = setTimeout(function() {
                     audioPlayer.pause();
                     cancelTimer();
+                    updatePlayPauseUI(false);
                 }, minutes * 60 * 1000);
 
                 countdownIntervalID = setInterval(function() {
@@ -377,72 +502,81 @@
                     }
                     var remainingMinutes = Math.floor((remaining / 1000) / 60);
                     var remainingSeconds = Math.floor((remaining / 1000) % 60);
-                    timerStatusEl.textContent = 'Stops in: ' + pad(remainingMinutes) + ':' + pad(remainingSeconds);
+                    timerStatusEl.textContent = 'Zaustavlja se za: ' + pad(remainingMinutes) + ':' + pad(remainingSeconds);
                 }, 1000);
-
-                timerStatusEl.classList.add("text-indigo-400");
-                cancelTimerBtn.classList.remove('hidden');
-                timerButtons.forEach(function(btn) {
-                    var btnMinutes = parseInt(btn.dataset.minutes, 10);
+                
+                cancelTimerBtn.className = '';
+                
+                // Oznacavanje izabranog tajmera
+                for (var i = 0; i < timerButtons.length; i++) {
+                    var btn = timerButtons[i];
+                    var btnMinutes = parseInt(btn.getAttribute('data-minutes'), 10);
                     if (btnMinutes === minutes) {
-                        btn.classList.add('bg-indigo-600', 'text-white');
-                        btn.classList.remove('bg-gray-700');
+                        btn.style.backgroundColor = '#0099cc';
                     } else {
-                        btn.classList.remove('bg-indigo-600', 'text-white');
-                        btn.classList.add('bg-gray-700');
+                        btn.style.backgroundColor = '#333333';
                     }
-                });
+                }
             }
 
-            // --- Event Listeners ---
+            // --- Event Listeners (koristimo standardne metode) ---
 
             playPauseBtn.addEventListener('click', togglePlayPause);
             audioPlayer.addEventListener('play', function() { updatePlayPauseUI(true); });
             audioPlayer.addEventListener('pause', function() { updatePlayPauseUI(false); });
             audioPlayer.addEventListener('ended', function() { updatePlayPauseUI(false); });
             audioPlayer.addEventListener('error', function(e) {
-                console.error("Audio Player Error:", e);
+                console.error("Greska Audio Plejera:", e);
                 if (audioPlayer.src !== '' && audioPlayer.src !== window.location.href) {
-                     stationNameEl.textContent = "Stream Interrupted";
-                    stationGenreEl.textContent = "Please select another station.";
-                    stationArt.src = "https://placehold.co/224x224/1f2937/ef4444?text=Error";
+                     stationNameEl.textContent = "Prekid Strima";
+                    stationGenreEl.textContent = "Izaberite drugu stanicu.";
                     updatePlayPauseUI(false);
                     currentStationIndex = -1;
                 }
             });
-            timerButtons.forEach(function(button) {
-                button.addEventListener('click', function() {
-                    startTimer(parseInt(this.dataset.minutes, 10));
-                });
-            });
-            cancelTimerBtn.addEventListener('click', cancelTimer);
-
-            // --- Initialization ---
-
-            function initializeStationList() {
-                stations.forEach(function(station, index) {
-                    var stationDiv = document.createElement('div');
-                    stationDiv.className = 'station-item flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors duration-200';
-                    stationDiv.innerHTML =
-                        '<img src="' + station.art + '" alt="' + station.name + '" class="w-12 h-12 rounded-md mr-4 object-cover">' +
-                        '<div class="flex-grow">' +
-                            '<p class="font-semibold text-gray-100">' + station.name + '</p>' +
-                            '<p class="text-sm text-gray-400">' + station.genre + '</p>' +
-                        '</div>' +
-                        '<div class="play-indicator ml-auto">' +
-                            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-indigo-400"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"></path></svg>' +
-                        '</div>';
-                    
-                    stationDiv.addEventListener('click', function() { playStation(index); });
-                    stationList.appendChild(stationDiv);
+            
+            // Postavljanje listenera za dugmad tajmera
+            for (var i = 0; i < timerButtons.length; i++) {
+                timerButtons[i].addEventListener('click', function() {
+                    startTimer(parseInt(this.getAttribute('data-minutes'), 10));
                 });
             }
+            cancelTimerBtn.addEventListener('click', cancelTimer);
 
-            // Initial setup
+            // --- Inicijalizacija Liste Stanica ---
+
+            function initializeStationList() {
+                for (var i = 0; i < stations.length; i++) {
+                    var station = stations[i];
+                    var stationDiv = document.createElement('div');
+                    
+                    // Koristimo clearfix za float-ove
+                    stationDiv.className = 'station-item clearfix';
+                    
+                    // Koristimo jednostavan HTML za strukturu elementa
+                    stationDiv.innerHTML =
+                        '<img src="' + station.art + '" alt="' + station.name + '" class="station-art-small">' +
+                        '<div class="station-info">' +
+                            '<p>' + station.name + '</p>' +
+                            '<p>' + station.genre + '</p>' +
+                        '</div>';
+                    
+                    // Koristimo IFFE za kreiranje scope-a za index
+                    (function(index) {
+                        stationDiv.addEventListener('click', function() { 
+                            playStation(index);
+                        });
+                    })(i);
+                    
+                    stationList.appendChild(stationDiv);
+                }
+            }
+
+            // Inicijalno podesavanje
             initializeStationList();
             audioPlayer.volume = 0.8;
+            updatePlayPauseUI(false); // Osiguravamo da je inicijalno stanje 'POKRENI'
         });
     </script>
 </body>
 </html>
-
